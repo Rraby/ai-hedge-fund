@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NVDA &middot; 2026-04-26 &middot; AI Watchlist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0d14;--surface:#0f1520;--card:#111827;
+  --border:#1e2d42;--text:#e2e8f0;--muted:#64748b;--dim:#2d3748;
+  --blue:#3b82f6;--num:#7dd3fc;
+  --green:#22c55e;--amber:#f59e0b;--red:#ef4444;
+  --green-bg:#052e16;--amber-bg:#1c1000;--red-bg:#1c0303;
+  --green-bdr:#166534;--amber-bdr:#92400e;--red-bdr:#7f1d1d;
+}
+body{background:var(--bg);color:var(--text);
+     font-family:'IBM Plex Sans',sans-serif;font-size:14px;line-height:1.6}
+.container{max-width:1200px;margin:0 auto;padding:36px 24px 72px}
+.playfair{font-family:'Playfair Display',serif}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:var(--muted)}
+
+/* Header */
+.header{display:flex;align-items:flex-start;justify-content:space-between;
+        margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid var(--border);
+        gap:16px;flex-wrap:wrap}
+.company-name{font-size:2.2rem;font-weight:700;letter-spacing:-.5px;
+              color:var(--text);margin-bottom:6px}
+.header-meta{color:var(--muted);font-size:12px;display:flex;
+             gap:8px;align-items:center;flex-wrap:wrap}
+.header-meta .ticker{color:var(--num);font-family:'IBM Plex Mono',monospace;
+                     font-weight:500;font-size:13px}
+.header-meta .sep{color:var(--dim)}
+.signal-pill{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;
+             padding:7px 18px;border-radius:4px;border:1px solid;
+             letter-spacing:3px;white-space:nowrap;margin-top:2px}
+.signal-pill.buy {color:var(--green);background:var(--green-bg);border-color:var(--green-bdr)}
+.signal-pill.hold{color:var(--amber);background:var(--amber-bg);border-color:var(--amber-bdr)}
+.signal-pill.sell{color:var(--red);  background:var(--red-bg);  border-color:var(--red-bdr)}
+
+/* Metrics grid */
+.metrics-grid{display:grid;grid-template-columns:repeat(7,1fr);
+              gap:10px;margin-bottom:20px}
+@media(max-width:960px){.metrics-grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:560px){.metrics-grid{grid-template-columns:repeat(2,1fr)}}
+.metric-card{background:var(--card);border:1px solid var(--border);
+             border-radius:6px;padding:14px 12px}
+.metric-label{font-size:9px;font-weight:600;letter-spacing:1.8px;
+              text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.metric-value{font-size:1.1rem;font-weight:500;color:var(--num);
+              margin-bottom:4px;white-space:nowrap;overflow:hidden;
+              text-overflow:ellipsis}
+.metric-arrow{font-size:12px}
+.arrow.up,.chg.up{color:var(--green)}
+.arrow.dn,.chg.dn{color:var(--red)}
+.arrow.neutral,.chg.neutral{color:var(--muted)}
+
+/* Charts row */
+.charts-row{display:grid;grid-template-columns:1fr 1fr 260px;
+            gap:14px;margin-bottom:20px}
+@media(max-width:900px){.charts-row{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){.signal-card{grid-column:1/-1}}
+.chart-card{background:var(--card);border:1px solid var(--border);
+            border-radius:6px;padding:20px}
+.chart-title{font-size:9px;font-weight:600;letter-spacing:1.8px;
+             text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.signal-card{display:flex;flex-direction:column;align-items:center;
+             justify-content:center;padding:20px 16px 16px}
+.gauge-wrap{width:180px;height:95px;position:relative}
+.gauge-label{font-family:'IBM Plex Mono',monospace;font-size:1.8rem;
+             font-weight:600;letter-spacing:4px;margin-top:6px}
+.gauge-label.buy {color:var(--green)}
+.gauge-label.hold{color:var(--amber)}
+.gauge-label.sell{color:var(--red)}
+.gauge-sub{font-size:10px;color:var(--muted);letter-spacing:1px;
+           text-transform:uppercase;margin-top:4px}
+
+/* Sections */
+.section{background:var(--card);border:1px solid var(--border);
+         border-radius:6px;padding:22px 24px;margin-bottom:14px}
+.section-title{font-size:9px;font-weight:600;letter-spacing:2px;
+               text-transform:uppercase;color:var(--muted);
+               margin-bottom:14px;padding-bottom:10px;
+               border-bottom:1px solid var(--border)}
+.section-title.green{color:var(--green)}
+.section-title.red  {color:var(--red)}
+
+/* Lists */
+.changes-list,.bull-list,.bear-list{list-style:none;display:flex;
+                                     flex-direction:column;gap:9px}
+.change-item{padding:10px 14px;background:var(--surface);
+             border-left:3px solid var(--blue);border-radius:0 4px 4px 0;
+             font-size:13px;line-height:1.5}
+.bull-item{padding:10px 14px;background:var(--surface);
+           border-left:3px solid var(--green);border-radius:0 4px 4px 0;
+           font-size:13px;line-height:1.5}
+.bear-item{padding:10px 14px;background:var(--surface);
+           border-left:3px solid var(--red);border-radius:0 4px 4px 0;
+           font-size:13px;line-height:1.5}
+.empty{color:var(--muted);font-style:italic}
+
+/* Two-column */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:680px){.two-col{grid-template-columns:1fr}}
+
+/* Guidance */
+.guidance-box{background:var(--card);border:1px solid var(--border);
+              border-radius:6px;padding:18px 22px;margin-bottom:14px;
+              font-size:13px;line-height:1.6}
+
+/* Quote */
+.quote-box{background:var(--surface);border-left:4px solid var(--blue);
+           border-radius:0 6px 6px 0;padding:18px 22px;margin-bottom:14px}
+.quote-box blockquote{font-style:italic;font-size:14px;color:var(--text);
+                       margin-bottom:8px;line-height:1.7}
+.quote-source{font-size:11px;color:var(--muted);
+              font-family:'IBM Plex Mono',monospace}
+
+/* Watch box */
+.watch-box{background:var(--amber-bg);border:1px solid var(--amber-bdr);
+           border-radius:6px;padding:14px 20px;margin-bottom:14px}
+.watch-label{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;
+             letter-spacing:2px;color:var(--amber);margin-bottom:7px}
+.watch-box p{font-size:13px;color:var(--text);line-height:1.5}
+
+/* Verdict */
+.verdict-box{border-radius:6px;padding:22px 24px;margin-bottom:24px;border:1px solid}
+.verdict-label{font-size:9px;font-weight:600;letter-spacing:2px;
+               text-transform:uppercase;margin-bottom:10px}
+.verdict-box p{font-size:14px;line-height:1.75}
+
+/* Footer */
+.footer{font-size:11px;color:var(--dim);text-align:center;
+        padding-top:20px;border-top:1px solid var(--border);
+        font-family:'IBM Plex Mono',monospace;letter-spacing:.5px}
+
+/* Print-only (hidden on screen) */
+.print-only{display:none}
+
+/* Print styles */
+@media print{
+  body{background:#fff!important;color:#000!important;font-size:11pt}
+  .container{max-width:100%;padding:0}
+  .company-name{color:#000!important;font-size:18pt}
+  .header{border-bottom:1pt solid #000}
+  .header-meta{color:#333!important}
+  .signal-pill{border:1pt solid #000!important;color:#000!important;background:transparent!important}
+  .metric-card{background:#f5f5f5!important;border:.5pt solid #ccc!important}
+  .metric-value{color:#000!important}
+  .metric-label{color:#555!important}
+  .charts-row{display:none!important}
+  .section,.guidance-box,.watch-box,.verdict-box,.two-col>div,.quote-box{
+    background:transparent!important;border:.5pt solid #ccc!important}
+  .section-title{color:#000!important;border-bottom:.5pt solid #ccc!important}
+  .section-title.green{color:#166534!important}
+  .section-title.red  {color:#991b1b!important}
+  .change-item,.bull-item,.bear-item{background:#f9f9f9!important;color:#000!important}
+  .change-item{border-left:3pt solid #2563eb!important}
+  .bull-item  {border-left:3pt solid #166534!important}
+  .bear-item  {border-left:3pt solid #991b1b!important}
+  .quote-box{border-left:3pt solid #2563eb!important;background:#f0f4ff!important}
+  .quote-box blockquote{color:#000!important}
+  .watch-box{background:#fffbeb!important;border-color:#d97706!important}
+  .watch-label{color:#92400e!important}
+  .verdict-box{border-color:#999!important}
+  .footer{color:#666!important;border-top:.5pt solid #ccc!important}
+  .arrow.up,.chg.up{color:#166534!important}
+  .arrow.dn,.chg.dn{color:#991b1b!important}
+  .print-only{display:block!important;margin:16pt 0;page-break-inside:avoid}
+  .print-only table{width:100%;border-collapse:collapse;font-size:10pt}
+  .print-only th,.print-only td{border:.5pt solid #ccc;padding:4pt 7pt;text-align:left}
+  .print-only th{background:#f0f0f0;font-weight:bold}
+  .print-only caption{font-size:11pt;font-weight:bold;margin-bottom:6pt;text-align:left}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ① Header -->
+  <div class="header">
+    <div>
+      <div class="company-name playfair">NVIDIA Corporation</div>
+      <div class="header-meta">
+        <span class="ticker">NVDA</span>
+        <span class="sep">&middot;</span>
+        <span>Period&nbsp;2026-04-26</span>
+        <span class="sep">&middot;</span>
+        <span>Filed&nbsp;2026-05-20</span>
+        <span class="sep">&middot;</span>
+        <span>Prior&nbsp;2025-10-26</span>
+      </div>
+    </div>
+    <div class="signal-pill buy">BUY</div>
+  </div>
+
+  <!-- ② Key Metrics Grid -->
+  <div class="metrics-grid">
+<div class="metric-card"><div class="metric-label">REVENUE</div><div class="metric-value mono">$81.61B</div><div class="metric-arrow"><span class="arrow up">&#x2191;</span><span class="chg up"> +43.2%</span></div></div><div class="metric-card"><div class="metric-label">EPS DILUTED</div><div class="metric-value mono">$2.391</div><div class="metric-arrow"><span class="arrow up">&#x2191;</span><span class="chg up"> +83.5%</span></div></div><div class="metric-card"><div class="metric-label">GROSS MARGIN</div><div class="metric-value mono">74.9%</div><div class="metric-arrow"><span class="arrow up">&#x2191;</span><span class="chg up"> +2.1%</span></div></div><div class="metric-card"><div class="metric-label">OP. MARGIN</div><div class="metric-value mono">65.6%</div><div class="metric-arrow"><span class="arrow up">&#x2191;</span><span class="chg up"> +3.8%</span></div></div><div class="metric-card"><div class="metric-label">FREE CASH FLOW</div><div class="metric-value mono">$48.59B</div><div class="metric-arrow"><span class="arrow dn">&#x2193;</span><span class="chg dn"> -21.3%</span></div></div><div class="metric-card"><div class="metric-label">CASH + MKT SEC</div><div class="metric-value mono">$50.34B</div><div class="metric-arrow"><span class="arrow up">&#x2191;</span><span class="chg up"> +338.2%</span></div></div><div class="metric-card"><div class="metric-label">TOTAL DEBT</div><div class="metric-value mono">$8.47B</div><div class="metric-arrow"><span class="arrow dn">&#x2191;</span><span class="chg dn"> +0.0%</span></div></div>
+  </div>
+
+  <!-- ③ Charts Row -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">Revenue ($B) &mdash; QoQ</div>
+      <canvas id="revenueChart" height="160"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Margins (%) &mdash; QoQ</div>
+      <canvas id="marginsChart" height="160"></canvas>
+    </div>
+    <div class="chart-card signal-card">
+      <div class="chart-title">Signal</div>
+      <div class="gauge-wrap">
+        <canvas id="gaugeChart"></canvas>
+      </div>
+      <div class="gauge-label buy">BUY</div>
+      <div class="gauge-sub">High Conviction</div>
+    </div>
+  </div>
+
+  <!-- ④ What Changed -->
+  <div class="section">
+    <div class="section-title">What Changed</div>
+    <ul class="changes-list"><li class="change-item"><strong><strong>Net Income</strong></strong> — $31.91B → $58.32B; EPS jumped $1.088 to $2.391 — massive earnings leverage on revenue growth</li><li class="change-item"><strong><strong>Cash & Mkt Securities</strong></strong> — $11.49B → $50.34B; fortress balance sheet built in a single quarter</li><li class="change-item"><strong><strong>Operating CF</strong></strong> — $66.53B → $50.34B despite higher net income — working capital consumed cash; FCF fell $13.2B QoQ</li></ul>
+  </div>
+
+  <!-- ⑤ Bull / Bear -->
+  <div class="two-col">
+    <div class="section">
+      <div class="section-title green">Bull Case</div>
+      <ul class="bull-list"><li class="bull-item"><strong>Margin expansion at scale is extraordinary.</strong> Revenue grew 43.2% QoQ while gross margins expanded 210bps to 74.9% and operating margins hit 65.6% — pricing power and operating leverage are both intact simultaneously.</li><li class="bull-item"><strong>Net income grew 2x faster than revenue (82.8% vs 43.2%).</strong> Below-the-line items (likely tax benefits or investment gains) amplified earnings, driving EPS to $2.391. This is not just top-line momentum — the entire P&L is compounding.</li><li class="bull-item"><strong>Balance sheet is now impenetrable.</strong> $50.34B cash vs. $8.47B total debt = net cash of ~$41.9B. Zero refinancing risk; massive optionality for buybacks, M&A, or R&D acceleration into next compute cycle.</li></ul>
+    </div>
+    <div class="section">
+      <div class="section-title red">Bear Case / Risks</div>
+      <ul class="bear-list"><li class="bear-item"><strong>Operating CF ($50.34B) badly lagged Net Income ($58.32B) while FCF fell 21.3% QoQ.</strong> When cash conversion deteriorates as earnings spike, it signals aggressive working capital build (likely inventory/receivables for Blackwell ramp) — execution risk if demand softens.</li><li class="bear-item"><strong>CapEx collapsed 63.1% QoQ ($4.76B → $1.76B).</strong> Either a timing anomaly or NVDA is deliberately pulling back on internal infrastructure. If competitors (AMD, custom silicon, Broadcom) are spending aggressively, underspending here could compress future competitive moats.</li><li class="bear-item"><strong>Base effect and concentration risk ahead.</strong> At $81.6B quarterly revenue run-rate (~$326B annualized), sustaining 40%+ growth requires hyperscalers to perpetually accelerate AI spend. Any capex digestion cycle or export restriction tightening (China/Middle East) could trigger a sharp guide-down.</li></ul>
+    </div>
+  </div>
+
+  <!-- ⑥ Guidance -->
+  <div class="guidance-box">
+    <div class="section-title">Guidance &amp; Forward Commentary</div>
+    <p><em>"FY2026 Earnings Analysis"</em></p>
+  </div>
+
+  <!-- ⑦ Key Quote -->
+  <div class="quote-box">
+    <blockquote>&#8220;Buy — High Conviction — NVDA is compounding revenue, margins, and cash simultaneously at a scale no technology company has achieved, but the OCF/NI divergence warrants monitoring next quarter for demand sustainability signals.&#8221;</blockquote>
+    <div class="quote-source">&mdash; claude-sonnet-4-6 analysis &middot; 20260522</div>
+  </div>
+
+  <!-- ⑧ Watch Next Quarter -->
+  <div class="watch-box">
+    <div class="watch-label">&#x26A0; WATCH NEXT QUARTER</div>
+    <p>Operating CF ($50.34B) badly lagged Net Income ($58.32B) while FCF fell 21.3% QoQ.</p>
+  </div>
+
+  <!-- ⑨ Verdict -->
+  <div class="verdict-box" style="background:#052e16;border-color:#166534">
+    <div class="verdict-label" style="color:#22c55e">Verdict</div>
+    <p>> <strong>Buy — High Conviction — NVDA is compounding revenue, margins, and cash simultaneously at a scale no technology company has achieved, but the OCF/NI divergence warrants monitoring next quarter for demand sustainability signals.</strong></p>
+  </div>
+
+  <!-- ⑩ Footer -->
+  <div class="footer">
+    Generated by AI Watchlist &nbsp;&middot;&nbsp; Source: SEC EDGAR
+    &nbsp;&middot;&nbsp; 20260522
+  </div>
+
+  <!-- Print-only metrics summary (hidden on screen, visible when printed) -->
+  <div class="print-only">
+    <table>
+      <caption>Key Metrics &mdash; NVDA &nbsp; 2026-04-26 vs 2025-10-26</caption>
+      <thead>
+        <tr><th>Metric</th><th>Current Q</th><th>Prior Q</th><th>QoQ</th></tr>
+      </thead>
+      <tbody><tr><td>Revenue</td><td>$81.61B</td><td>$57.01B</td><td>+43.2%</td></tr><tr><td>Gross Margin</td><td>74.9%</td><td>73.4%</td><td>+2.1%</td></tr><tr><td>Op. Margin</td><td>65.6%</td><td>63.2%</td><td>+3.8%</td></tr><tr><td>EPS Diluted</td><td>$2.391</td><td>$1.303</td><td>+83.5%</td></tr><tr><td>Free Cash Flow</td><td>$48.59B</td><td>$61.77B</td><td>-21.3%</td></tr><tr><td>Cash + Mkt Sec</td><td>$50.34B</td><td>$11.49B</td><td>+338.2%</td></tr><tr><td>Total Debt</td><td>$8.47B</td><td>$8.47B</td><td>+0.0%</td></tr></tbody>
+    </table>
+  </div>
+
+</div>
+<script>
+var CHART_DATA = {"signal": "buy", "revenue": {"prior_label": "2025-10-26", "curr_label": "2026-04-26", "prior": 57.006, "curr": 81.615}, "margins": {"gross_prior": 73.4, "gross_curr": 74.9, "op_prior": 63.2, "op_curr": 65.6}};
+
+document.addEventListener('DOMContentLoaded', function () {
+  var D = CHART_DATA;
+
+  var TICK = {
+    color: '#64748b',
+    font: { family: "'IBM Plex Mono', monospace", size: 11 }
+  };
+  var GRID    = { color: '#1e2d42' };
+  var TOOLTIP = {
+    backgroundColor: '#141d2b', titleColor: '#7dd3fc',
+    bodyColor: '#e2e8f0', borderColor: '#1e2d42', borderWidth: 1
+  };
+
+  /* Revenue bar chart */
+  var revEl = document.getElementById('revenueChart');
+  if (revEl) {
+    new Chart(revEl, {
+      type: 'bar',
+      data: {
+        labels: [D.revenue.prior_label, D.revenue.curr_label],
+        datasets: [{
+          label: 'Revenue ($B)',
+          data: [D.revenue.prior, D.revenue.curr],
+          backgroundColor: ['rgba(59,130,246,0.30)', 'rgba(59,130,246,0.80)'],
+          borderColor:     ['rgba(59,130,246,0.60)', 'rgba(59,130,246,1.00)'],
+          borderWidth: 1, borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: Object.assign({}, TOOLTIP, {
+            callbacks: { label: function(c){ return ' $' + c.parsed.y.toFixed(2) + 'B'; } }
+          })
+        },
+        scales: {
+          x: { grid: GRID, ticks: TICK },
+          y: { grid: GRID, ticks: Object.assign({}, TICK, {
+            callback: function(v){ return '$' + v.toFixed(1) + 'B'; }
+          })}
+        }
+      }
+    });
+  }
+
+  /* Margin grouped bar chart */
+  var mrgEl = document.getElementById('marginsChart');
+  if (mrgEl) {
+    new Chart(mrgEl, {
+      type: 'bar',
+      data: {
+        labels: ['Gross Margin', 'Op. Margin'],
+        datasets: [
+          {
+            label: 'Prior Q',
+            data: [D.margins.gross_prior, D.margins.op_prior],
+            backgroundColor: 'rgba(99,102,241,0.35)',
+            borderColor:     'rgba(99,102,241,0.80)',
+            borderWidth: 1, borderRadius: 4
+          },
+          {
+            label: 'Current Q',
+            data: [D.margins.gross_curr, D.margins.op_curr],
+            backgroundColor: 'rgba(34,197,94,0.50)',
+            borderColor:     'rgba(34,197,94,0.90)',
+            borderWidth: 1, borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            labels: {
+              color: '#64748b',
+              font: { family: "'IBM Plex Mono', monospace", size: 11 },
+              boxWidth: 10
+            }
+          },
+          tooltip: Object.assign({}, TOOLTIP, {
+            callbacks: {
+              label: function(c){
+                return ' ' + c.dataset.label + ': ' + c.parsed.y.toFixed(1) + '%';
+              }
+            }
+          })
+        },
+        scales: {
+          x: { grid: GRID, ticks: TICK },
+          y: { grid: GRID, ticks: Object.assign({}, TICK, {
+            callback: function(v){ return v + '%'; }
+          })}
+        }
+      }
+    });
+  }
+
+  /* Signal gauge — half-donut, active segment highlighted */
+  var gaugeEl = document.getElementById('gaugeChart');
+  if (gaugeEl) {
+    var DIM    = '#1a2535';
+    var COLORS = { buy: '#22c55e', hold: '#f59e0b', sell: '#ef4444' };
+    var sig    = D.signal;
+    new Chart(gaugeEl, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [1, 1, 1],
+          backgroundColor: [
+            sig === 'sell' ? COLORS.sell : DIM,
+            sig === 'hold' ? COLORS.hold : DIM,
+            sig === 'buy'  ? COLORS.buy  : DIM
+          ],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        rotation: -90, circumference: 180, cutout: '66%',
+        plugins: {
+          legend:  { display: false },
+          tooltip: { enabled: false }
+        },
+        animation: { duration: 700, easing: 'easeInOutQuart' }
+      }
+    });
+  }
+});
+
+</script>
+</body>
+</html>
